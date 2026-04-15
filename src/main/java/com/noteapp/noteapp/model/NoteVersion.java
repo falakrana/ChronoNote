@@ -20,6 +20,8 @@ public class NoteVersion {
     
     @Column(nullable = false)
     private Long noteId;
+
+    private String title;
     
     @Column(columnDefinition = "TEXT")
     private String content;

@@ -31,4 +31,8 @@ public class Note {
     
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Builder.Default
+    @Column(name = "is_deleted")
+    private Boolean deleted = false;
 }

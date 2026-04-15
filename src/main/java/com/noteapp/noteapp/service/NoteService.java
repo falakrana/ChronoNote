@@ -19,6 +19,9 @@ public class NoteService {
 
     @Transactional
     public Note createNote(Note note) {
+        if (note.getDeleted() == null) {
+            note.setDeleted(false);
+        }
         Note savedNote = noteRepository.save(note);
 
         // Create initial version 1
@@ -44,16 +47,48 @@ public class NoteService {
     }
 
     public List<Note> getAllNotes() {
-        return noteRepository.findAll();
+        return noteRepository.findByDeletedFalse();
+    }
+
+    public List<Note> getTrashNotes() {
+        return noteRepository.findByDeletedTrue();
     }
 
     public Note getNoteById(Long id) {
         return noteRepository.findById(id)
+                .filter(note -> note.getDeleted() == null || !note.getDeleted())
+                .orElseThrow(() -> new RuntimeException("Note not found or is in trash with id: " + id));
+    }
+
+    @Transactional
+    public void softDelete(Long id) {
+        Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Note not found with id: " + id));
+        note.setDeleted(true);
+        noteRepository.save(note);
+    }
+
+    @Transactional
+    public void restoreNote(Long id) {
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Note not found with id: " + id));
+        note.setDeleted(false);
+        noteRepository.save(note);
+    }
+
+    @Transactional
+    public void hardDelete(Long id) {
+        if (!noteRepository.existsById(id)) {
+            throw new RuntimeException("Note not found with id: " + id);
+        }
+        // Delete history first (Cascade)
+        noteVersionRepository.deleteByNoteId(id);
+        // Delete note
+        noteRepository.deleteById(id);
     }
 
     public List<NoteVersion> getNoteHistory(Long noteId) {
-        // Ensure note exists before fetching history
+        // History should be accessible even if note is soft-deleted for auditing
         if (!noteRepository.existsById(noteId)) {
             throw new RuntimeException("Note not found with id: " + noteId);
         }
@@ -63,6 +98,7 @@ public class NoteService {
     private void saveVersionEntry(Note note, int versionNumber) {
         NoteVersion version = NoteVersion.builder()
                 .noteId(note.getId())
+                .title(note.getTitle())
                 .content(note.getContent())
                 .versionNumber(versionNumber)
                 .build();
