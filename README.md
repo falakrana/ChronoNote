@@ -45,9 +45,13 @@ mvn spring-boot:run
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | **POST** | `/api/notes` | Create a new note |
-| **GET** | `/api/notes` | Retrieve all notes |
+| **GET** | `/api/notes` | Retrieve all active notes |
+| **GET** | `/api/notes/trash` | Retrieve all soft-deleted notes |
 | **GET** | `/api/notes/{id}` | Retrieve a specific note by ID |
 | **PUT** | `/api/notes/{id}` | Update a note (creates a new version) |
+| **DELETE**| `/api/notes/{id}` | Soft delete a note (moves to trash) |
+| **PUT** | `/api/notes/{id}/restore`| Restore a soft-deleted note from trash |
+| **DELETE**| `/api/notes/{id}/permanent`| Permanently delete a note |
 | **GET** | `/api/notes/{id}/history` | Retrieve version history for a note |
 
 ## 🛡️ Security
