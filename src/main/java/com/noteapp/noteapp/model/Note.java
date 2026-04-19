@@ -24,6 +24,9 @@ public class Note {
     
     @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Column(length = 100)
+    private String tenantId;
     
     @CreationTimestamp
     @Column(updatable = false)

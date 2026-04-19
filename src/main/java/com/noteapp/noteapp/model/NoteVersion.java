@@ -21,6 +21,9 @@ public class NoteVersion {
     @Column(nullable = false)
     private Long noteId;
 
+    @Column(length = 100)
+    private String tenantId;
+
     private String title;
     
     @Column(columnDefinition = "TEXT")

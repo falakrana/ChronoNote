@@ -8,6 +8,7 @@ import java.util.List;
 
 @Repository
 public interface NoteVersionRepository extends JpaRepository<NoteVersion, Long> {
-    List<NoteVersion> findByNoteId(Long noteId);
-    void deleteByNoteId(Long noteId);
+    List<NoteVersion> findByNoteIdAndTenantIdOrderByVersionNumberDesc(Long noteId, String tenantId);
+    void deleteByNoteIdAndTenantId(Long noteId, String tenantId);
+    long countByNoteIdAndTenantId(Long noteId, String tenantId);
 }
