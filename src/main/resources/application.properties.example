@@ -15,4 +15,5 @@ spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
 # Platform/Runtime Configuration
 server.port=${PORT:8080}
 app.cors.allowed-origin=${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
-app.tenant.header-name=${APP_TENANT_HEADER_NAME:X-Tenant-Id}
+app.jwt.secret=${APP_JWT_SECRET:change-me-change-me-change-me-change-me}
+app.jwt.expiration-minutes=${APP_JWT_EXPIRATION_MINUTES:1440}
