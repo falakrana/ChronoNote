@@ -35,16 +35,23 @@ public class NoteService {
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Note not found with id: " + id));
 
+        // Check if anything actually changed
+        boolean isChanged = !note.getTitle().equals(noteDetails.getTitle()) || 
+                           !note.getContent().equals(noteDetails.getContent());
+
         note.setTitle(noteDetails.getTitle());
         note.setContent(noteDetails.getContent());
         Note updatedNote = noteRepository.save(note);
 
-        // Calculate version number: current count of versions + 1
-        int nextVersion = noteVersionRepository.findByNoteId(id).size() + 1;
-        saveVersionEntry(updatedNote, nextVersion);
+        // Only create a new version if there were actual changes
+        if (isChanged) {
+            int nextVersion = noteVersionRepository.findByNoteId(id).size() + 1;
+            saveVersionEntry(updatedNote, nextVersion);
+        }
 
         return updatedNote;
     }
+
 
     public List<Note> getAllNotes() {
         return noteRepository.findByDeletedFalse();
