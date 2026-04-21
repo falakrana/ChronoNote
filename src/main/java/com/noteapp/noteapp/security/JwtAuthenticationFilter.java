@@ -24,8 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return "OPTIONS".equalsIgnoreCase(request.getMethod()) || path.startsWith("/api/auth");
+        return "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
 
     @Override
@@ -35,34 +34,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header");
-            return;
-        }
-
-        String token = authHeader.substring(7);
-        Claims claims;
+        String tenantId = "public";
         try {
-            claims = jwtService.parseClaims(token);
-        } catch (Exception ex) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
-            return;
-        }
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                Claims claims = jwtService.parseClaims(token);
+                String email = claims.getSubject();
+                String tokenTenantId = claims.get("tenant_id", String.class);
 
-        String email = claims.getSubject();
-        String tenantId = claims.get("tenant_id", String.class);
-        if (email == null || email.isBlank() || tenantId == null || tenantId.isBlank()) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token missing required claims");
-            return;
-        }
+                if (email != null && !email.isBlank() && tokenTenantId != null && !tokenTenantId.isBlank()) {
+                    tenantId = tokenTenantId;
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            }
 
-        try {
             TenantContext.setTenantId(tenantId);
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
+            filterChain.doFilter(request, response);
+        } catch (Exception ignored) {
+            // In no-auth mode we tolerate invalid/expired tokens and continue as public tenant.
+            TenantContext.setTenantId("public");
             filterChain.doFilter(request, response);
         } finally {
             SecurityContextHolder.clearContext();
