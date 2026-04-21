@@ -5,6 +5,7 @@ A production-level RESTful API built with Spring Boot that automatically tracks 
 ## 🚀 Features
 
 - **Full CRUD Operations**: Create, Read, Update, and List notes.
+- **Authentication**: Secure User registration and login with JWT support.
 - **Automatic Versioning**: Every update to a note creates a new version entry in the history.
 - **Persistent Storage**: Integrated with PostgreSQL for reliable data management.
 - **Clean Architecture**: Follows the Controller-Service-Repository-Model pattern.
@@ -29,10 +30,11 @@ Create a database named `note_db` in your PostgreSQL instance.
 
 ### 3. Configuration
 1. Rename `src/main/resources/application.properties.example` to `application.properties`.
-2. Update the database credentials:
+3. Update the database credentials and JWT secret:
    ```properties
    spring.datasource.username=your_username
    spring.datasource.password=your_password
+   app.jwt.secret=your_secure_secret_key
    ```
 
 ### 4. Run the Application
@@ -44,12 +46,14 @@ mvn spring-boot:run
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
+| **POST** | `/api/auth/signup` | Register a new user |
+| **POST** | `/api/auth/login` | Authenticate and receive a token |
 | **POST** | `/api/notes` | Create a new note |
 | **GET** | `/api/notes` | Retrieve all active notes |
 | **GET** | `/api/notes/trash` | Retrieve all soft-deleted notes |
 | **GET** | `/api/notes/{id}` | Retrieve a specific note by ID |
-| **PUT** | `/api/notes/{id}` | Update a note (creates a new version) |
-| **DELETE**| `/api/notes/{id}` | Soft delete a note (moves to trash) |
+| **PUT** | `/api/notes/{id}`| Update a note (creates a new version) |
+| **DELETE**| `/api/notes/{id}`| Soft delete a note (moves to trash) |
 | **PUT** | `/api/notes/{id}/restore`| Restore a soft-deleted note from trash |
 | **DELETE**| `/api/notes/{id}/permanent`| Permanently delete a note |
 | **GET** | `/api/notes/{id}/history` | Retrieve version history for a note |
