@@ -13,31 +13,28 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Note {
-    
+public class Folder {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(nullable = false)
-    private String title;
-    
-    @Column(columnDefinition = "TEXT")
-    private String content;
+
+    @Column(nullable = false, length = 150)
+    private String name;
+
+    private Long parentFolderId;
 
     @Column(length = 100)
     private String tenantId;
 
-    private Long folderId;
-    
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
-    
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
     @Builder.Default
-    @Column(name = "is_deleted")
     private Boolean deleted = false;
 }

@@ -2,6 +2,7 @@ package com.noteapp.noteapp.service;
 
 import com.noteapp.noteapp.model.Note;
 import com.noteapp.noteapp.model.NoteVersion;
+import com.noteapp.noteapp.repository.FolderRepository;
 import com.noteapp.noteapp.repository.NoteRepository;
 import com.noteapp.noteapp.repository.NoteVersionRepository;
 import com.noteapp.noteapp.tenant.TenantContext;
@@ -17,6 +18,7 @@ public class NoteService {
 
     private final NoteRepository noteRepository;
     private final NoteVersionRepository noteVersionRepository;
+    private final FolderRepository folderRepository;
 
     @Transactional
     public Note createNote(Note note) {
@@ -24,6 +26,7 @@ public class NoteService {
         if (note.getDeleted() == null) {
             note.setDeleted(false);
         }
+        validateFolderAccess(note.getFolderId(), tenantId);
         note.setTenantId(tenantId);
         Note savedNote = noteRepository.save(note);
 
@@ -41,10 +44,13 @@ public class NoteService {
 
         // Check if anything actually changed
         boolean isChanged = !note.getTitle().equals(noteDetails.getTitle()) || 
-                           !note.getContent().equals(noteDetails.getContent());
+                           !note.getContent().equals(noteDetails.getContent()) ||
+                           !java.util.Objects.equals(note.getFolderId(), noteDetails.getFolderId());
 
+        validateFolderAccess(noteDetails.getFolderId(), tenantId);
         note.setTitle(noteDetails.getTitle());
         note.setContent(noteDetails.getContent());
+        note.setFolderId(noteDetails.getFolderId());
         Note updatedNote = noteRepository.save(note);
 
         // Only create a new version if there were actual changes
@@ -57,8 +63,16 @@ public class NoteService {
     }
 
 
-    public List<Note> getAllNotes() {
-        return noteRepository.findByTenantIdAndDeletedFalseOrderByUpdatedAtDesc(TenantContext.getRequiredTenantId());
+    public List<Note> getAllNotes(Long folderId, boolean rootOnly) {
+        String tenantId = TenantContext.getRequiredTenantId();
+        if (rootOnly) {
+            return noteRepository.findByTenantIdAndDeletedFalseAndFolderIdIsNullOrderByUpdatedAtDesc(tenantId);
+        }
+        if (folderId != null) {
+            validateFolderAccess(folderId, tenantId);
+            return noteRepository.findByTenantIdAndDeletedFalseAndFolderIdOrderByUpdatedAtDesc(tenantId, folderId);
+        }
+        return noteRepository.findByTenantIdAndDeletedFalseOrderByUpdatedAtDesc(tenantId);
     }
 
     public List<Note> getTrashNotes() {
@@ -86,6 +100,16 @@ public class NoteService {
         String tenantId = TenantContext.getRequiredTenantId();
         Note note = noteRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new RuntimeException("Note not found with id: " + id));
+        
+        // If the folder this note belongs to is still deleted, move it to root
+        if (note.getFolderId() != null) {
+            folderRepository.findByIdAndTenantId(note.getFolderId(), tenantId).ifPresent(folder -> {
+                if (folder.getDeleted() != null && folder.getDeleted()) {
+                    note.setFolderId(null);
+                }
+            });
+        }
+
         note.setDeleted(false);
         noteRepository.save(note);
     }
@@ -120,5 +144,14 @@ public class NoteService {
                 .versionNumber(versionNumber)
                 .build();
         noteVersionRepository.save(version);
+    }
+
+    private void validateFolderAccess(Long folderId, String tenantId) {
+        if (folderId == null) {
+            return;
+        }
+        if (!folderRepository.existsByIdAndTenantId(folderId, tenantId)) {
+            throw new RuntimeException("Folder not found with id: " + folderId);
+        }
     }
 }

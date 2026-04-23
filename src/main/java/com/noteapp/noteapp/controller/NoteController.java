@@ -23,8 +23,11 @@ public class NoteController {
     }
 
     @GetMapping
-    public List<Note> getAllNotes() {
-        return noteService.getAllNotes();
+    public List<Note> getAllNotes(
+            @RequestParam(required = false) Long folderId,
+            @RequestParam(defaultValue = "false") boolean rootOnly
+    ) {
+        return noteService.getAllNotes(folderId, rootOnly);
     }
 
     @GetMapping("/trash")
