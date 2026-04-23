@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS folder (
     tenant_id VARCHAR(100),
     created_at TIMESTAMP,
     updated_at TIMESTAMP
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX IF NOT EXISTS idx_folder_tenant_id ON folder (tenant_id);
