@@ -34,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        String tenantId = "public";
+
         try {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
@@ -43,20 +43,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String tokenTenantId = claims.get("tenant_id", String.class);
 
                 if (email != null && !email.isBlank() && tokenTenantId != null && !tokenTenantId.isBlank()) {
-                    tenantId = tokenTenantId;
+                    TenantContext.setTenantId(tokenTenantId);
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
-
-            TenantContext.setTenantId(tenantId);
             filterChain.doFilter(request, response);
-        } catch (Exception ignored) {
-            // In no-auth mode we tolerate invalid/expired tokens and continue as public tenant.
-            TenantContext.setTenantId("public");
-            filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Invalid or expired token\"}");
         } finally {
             SecurityContextHolder.clearContext();
             TenantContext.clear();

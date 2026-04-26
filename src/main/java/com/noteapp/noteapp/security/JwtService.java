@@ -18,9 +18,12 @@ public class JwtService {
     private final long expirationMinutes;
 
     public JwtService(
-            @Value("${app.jwt.secret:change-me-change-me-change-me-change-me}") String rawSecret,
+            @Value("${app.jwt.secret}") String rawSecret,
             @Value("${app.jwt.expiration-minutes:1440}") long expirationMinutes
     ) {
+        if (rawSecret == null || rawSecret.isBlank() || rawSecret.equals("change-me-change-me-change-me-change-me")) {
+            throw new IllegalStateException("A secure JWT secret must be provided via 'app.jwt.secret' environment variable.");
+        }
         byte[] keyBytes = rawSecret.getBytes(StandardCharsets.UTF_8);
         this.signingKey = Keys.hmacShaKeyFor(normalizeKeyLength(keyBytes));
         this.expirationMinutes = expirationMinutes;
