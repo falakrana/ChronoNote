@@ -33,11 +33,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String token = null;
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        
+        if (token == null) {
+            String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            }
+        }
 
         try {
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+            if (token != null && !token.isBlank()) {
                 Claims claims = jwtService.parseClaims(token);
                 String email = claims.getSubject();
                 String tokenTenantId = claims.get("tenant_id", String.class);

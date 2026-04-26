@@ -17,12 +17,40 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
-        return ResponseEntity.ok(authService.signup(request));
+    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request, jakarta.servlet.http.HttpServletResponse response) {
+        AuthResponse authResponse = authService.signup(request);
+        setTokenCookie(response, authResponse.token());
+        return ResponseEntity.ok(authResponse);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletResponse response) {
+        AuthResponse authResponse = authService.login(request);
+        setTokenCookie(response, authResponse.token());
+        return ResponseEntity.ok(authResponse);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(jakarta.servlet.http.HttpServletResponse response) {
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Strict")
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
+        return ResponseEntity.ok().build();
+    }
+
+    private void setTokenCookie(jakarta.servlet.http.HttpServletResponse response, String token) {
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(24 * 60 * 60)
+                .sameSite("Strict")
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }
